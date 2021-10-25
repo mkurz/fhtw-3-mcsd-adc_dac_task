@@ -375,17 +375,79 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+/**
+  * @brief  Interrupt routine which gets fired by the ADC.
+  *         For our task the ADC itself gets triggered by TIM6, which "fires" every 20ms.
+  * @param  htim: Information about the adc event.
+  * @retval None
+  */
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
-  uint32_t adc_value = HAL_ADC_GetValue(&hadc1);
+  /**
+   * @Herr Kobelrausch:
+   *
+   * Ich habe herausgefunden, dass bei der LED ab dem Wert 800 und darunter die LED komplett leuchtet.
+   * Ich habe das auch in der Nacht bei völliger Dunkelheit ausprobiert und es macht für mich eigentlich keinen
+   * Unterschied ob die LED auf 800 oder auf 0 gesetzt wird. Des weiteren hat es für ich den Anschein, dass die LED
+   * ab 1400 und darüber komplett abgedreht ist. Deshalb habe ich nun eben die LED mit Werten von 800 - 1400 angesteuert,
+   * obwohl das Potentiometer Werte von 0-4028 zurückgibt. (Ich weiß aber nicht sicher ob bei allen unseren Mikrocontrollern
+   * dieses Verhalten gleich ist, ich nehme aber an ja). Dazu verwende ich dann lineare Interpolation. Da ich mich mit dem
+   * Thema zum ersten Mal befasse, hat mir natürlich Google dabei ein wenig geholfen ;)
+   * (Z.b. https://forum.arduino.cc/t/array-und-lineare-interpolation/352611)
+   * Außerdem möchte ich anmerken, dass wenn man das Potentiometer von ganz rechts (also 0 bzw. max. Helligkeit)
+   * nach links dreht, es kurz dauert bis überhaupt eine Änderung des Wertes (also von 0 auf 1 oder höher) registriert wird.
+   * Dies liegt am Potentiometer und kann durch mich, also Programmierung nicht beeinflusst werden. D.h. es dauert kurz bis
+   * mein Algorithmus überhaupt greift. Mit einem genaueren Potentiometer könnte ich somit noch schöner bzw. genauer dimmen.
+   *
+   * Weiters habe ich diese obigen Werte mittels "debugging" auf der console ausgeben herausgefunden,
+   * mittels sprintf und UART. Ich habe diesen debug code unten auskommentiert, damit Sie das nachvollziehen können.
+   *
+   * Als Bonus habe ich unten eine zweite Implementierungsmöglichkeit auskommentiert ;)
+   */
 
-  char uart_buf[100];
-  int uart_buf_len;
-  uart_buf_len = sprintf(uart_buf, "ADC value: %d\n", adc_value);
-  HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, uart_buf_len, 100);
+  int mapping[3][2] = { {   0  ,     0 },   // This entry exists only so we can use mapping[i-1] in the calculation below
+                        {   0  ,   800 },   // Map the potentiometer value 0 to the LED value 800 (because LED 0-800 is max. brightness)
+                        // LED is dimming now from 800 - 1400. We could add more array entries to our desires, if we want to change
+                        // at which steps dimming is happening (e.g. more aggressive dimming when turning potentiometer from max right to left, etc.)
+                        { 4028 ,  1400 } }; // Map highest (measured) potentiometer value 4028 to 1400 LED value (because LED 1400+ is "off")
 
-  if(HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, adc_value) != HAL_OK) {
+  uint32_t adc_in = HAL_ADC_GetValue(&hadc1); // Read the value from the potentiometer: 0-4028
+  uint32_t dac_out;                           // The value we send to the LED: 800-1400 (800 = full brightness, 1400 = "off")
+
+  uint8_t i = 1; // Start with 1 not 0, see comment above for array entry { 0, 0 }
+  while (i < 3 && adc_in >= mapping[i][0]){ i++; } // Search for matching entry in mapping array
+  // Calculate DAC output for LED with formula for linear interpolation:
+  dac_out = (((mapping[i][1] - mapping[i-1][1]) * ( adc_in - mapping[i-1][0] )) / (mapping[i][0] - mapping[i-1][0] )) + mapping[i-1][1];
+
+  if(HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, dac_out) != HAL_OK) {
     Error_Handler();
   }
+
+//  // Used to debug the potentiometer values on the console:
+//  char uart_buf[100];
+//  int uart_buf_len;
+//  uart_buf_len = sprintf(uart_buf, "ADC value: %d %d\n", adc_in, dac_out);
+//  HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, uart_buf_len, 100);
+
+  /**
+   * @Herr Kobelrausch:
+   *
+   * Ich hätte hier auch noch eine alternative Implementierung, jedoch dimmt diese nicht so schön.
+   * Dazu rechne ich einfach das Verhältnis vom maximal Werte des Potentiometer und dem max. Wert des LED aus.
+   * Nun dividiere ich den Potentiometer Eingangswert einfach durch dieses berechnet Verhältnis, somit fängt leuchtet
+   * das LED quasi (fast) immer in irgendeiner Helligkeit, es kommt somit nie in den Bereich 1400+, in welchem es ständig "off" wäre.
+   * Somit wäre man beim drehen des Potentiometers von links nach rechts lange keine LED leuchten sehen. Und das sollten wir ja
+   * laut Ihrer Aussage bzgl. der Angabe verhindern.
+   */
+//  float potentiometer_max = 4028; // highest value measured
+//  float led_max = 1400;
+//
+//  uint32_t adc_in = HAL_ADC_GetValue(&hadc1);
+//  uint32_t dac_out = adc_in / (potentiometer_max / led_max); // <-- Calculation for dimming, makes sure we never reach the LED "off" range 1400+
+//
+//  if(HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, dac_out) != HAL_OK) {
+//    Error_Handler();
+//  }
 }
 
 /* USER CODE END 4 */
