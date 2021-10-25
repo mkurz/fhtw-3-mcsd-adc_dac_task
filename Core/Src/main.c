@@ -112,14 +112,10 @@ int main(void)
     Error_Handler();
   }
 
+  // Start DAC (used to set the LED brightness)
   if(HAL_DAC_Start(&hdac1, DAC_CHANNEL_1) != HAL_OK) {
     Error_Handler();
   }
-
-  char uart_buf[100];
-  int uart_buf_len;
-  uart_buf_len = sprintf(uart_buf, "Starting...!\n");
-  HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, uart_buf_len, 100);
 
   /* USER CODE END 2 */
 
