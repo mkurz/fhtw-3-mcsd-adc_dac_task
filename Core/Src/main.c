@@ -392,7 +392,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
    * Als Bonus habe ich unten eine zweite Implementierungsmöglichkeit auskommentiert ;)
    */
 
-  int mapping[3][2] = { {   0  ,     0 },   // This entry exists only so we can use mapping[i-1] in the calculation below
+  int mapping[3][2] = { {   0  ,     0 },   // First, as base, we need to define zero, for the lowest value that can exist and so we can use mapping[i-1] in the calculation below
                         {   0  ,   800 },   // Map the potentiometer value 0 to the LED value 800 (because LED 0-800 is max. brightness)
                         // LED is dimming now from 800 - 1400. We could add more array entries to our desires, if we want to change
                         // at which steps dimming is happening (e.g. more aggressive dimming when turning potentiometer from max right to left, etc.)
@@ -401,7 +401,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
   uint32_t adc_in = HAL_ADC_GetValue(&hadc1); // Read the value from the potentiometer: 0-4028
   uint32_t dac_out;                           // The value we send to the LED: 800-1400 (800 = full brightness, 1400 = "off")
 
-  uint8_t i = 1; // Start with 1 not 0, see comment above for array entry { 0, 0 }
+  uint8_t i = 1; // We can start with 1 not 0, see comment above for array entry { 0, 0 }
   while (i < 3 && adc_in >= mapping[i][0]){ i++; } // Search for matching entry in mapping array
   // Calculate DAC output for LED with formula for linear interpolation:
   dac_out = (((mapping[i][1] - mapping[i-1][1]) * ( adc_in - mapping[i-1][0] )) / (mapping[i][0] - mapping[i-1][0] )) + mapping[i-1][1];
