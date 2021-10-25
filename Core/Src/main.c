@@ -413,7 +413,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
 //  // Used to debug the potentiometer values on the console:
 //  char uart_buf[100];
 //  int uart_buf_len;
-//  uart_buf_len = sprintf(uart_buf, "ADC value: %d %d\n", adc_in, dac_out);
+//  uart_buf_len = sprintf(uart_buf, "ADC in: %d DAC out: %d\n", adc_in, dac_out);
 //  HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, uart_buf_len, 100);
 
   /**
