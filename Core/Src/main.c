@@ -421,9 +421,9 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
    *
    * Ich hätte hier auch noch eine alternative Implementierung, jedoch dimmt diese nicht so schön.
    * Dazu rechne ich einfach das Verhältnis vom maximal Werte des Potentiometer und dem max. Wert des LED aus.
-   * Nun dividiere ich den Potentiometer Eingangswert einfach durch dieses berechnet Verhältnis, somit fängt leuchtet
-   * das LED quasi (fast) immer in irgendeiner Helligkeit, es kommt somit nie in den Bereich 1400+, in welchem es ständig "off" wäre.
-   * Somit wäre man beim drehen des Potentiometers von links nach rechts lange keine LED leuchten sehen. Und das sollten wir ja
+   * Nun dividiere ich den Potentiometer Eingangswert einfach durch dieses berechnet Verhältnis, somit leuchtet
+   * das LED quasi (fast) immer in irgendeiner Helligkeit, es kommt somit nie in den Bereich 1400+, in welchem es ständig "off" wäre,
+   * so dass beim drehen des Potentiometers von links nach rechts lange keine LED leuchten würde. Und das sollten wir ja
    * laut Ihrer Aussage bzgl. der Angabe verhindern.
    */
 //  float potentiometer_max = 4028; // highest value measured
